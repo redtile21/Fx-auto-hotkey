@@ -1,0 +1,42 @@
+name: Build macOS app
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tests/test_logic.py
+        env:
+          FXHOTKEYS_HOME: ${{ runner.temp }}
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14        # Apple Silicon. Intel Macs: build locally with ./build.sh
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: ./build.sh
+        env:
+          PYTHON: python
+      - name: Rename
+        run: mv dist/FXHotkeys-macOS.dmg "dist/FXHotkeys-macOS-${{ matrix.arch }}.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FXHotkeys-macOS-${{ matrix.arch }}
+          path: dist/FXHotkeys-macOS-${{ matrix.arch }}.dmg
