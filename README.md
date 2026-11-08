@@ -22,43 +22,70 @@ clears the filters and inserts the first result.
 
 ---
 
-## Install
+## Install (recommended: build it on your Mac)
 
-1. Download `FXHotkeys-macOS-arm64.dmg` (see **Build** below), open it and drag **FX Hotkeys**
-   into **Applications**.
-2. The app isn't notarized, so the first time you open it, **right-click → Open** in Finder and
-   confirm.
-3. **Grant Accessibility access.** macOS asks for it on first launch. You can also go to
-   **System Settings → Privacy & Security → Accessibility** and turn **FX Hotkeys** on.
-   FX Hotkeys can't see or send key presses without this permission. The sidebar shows
-   **● Needs permission** until access is granted, then switches to **● Active** by itself
-   without a restart.
+Building the app yourself takes about 5 minutes. You don't need an Apple developer account, and
+macOS opens the app without any "unidentified developer" warning, because only downloaded apps
+get checked.
 
-> After installing a new build, macOS may keep the old permission entry and ignore the new app.
-> If shortcuts stop working, remove FX Hotkeys from the Accessibility list (–) and add it again.
+1. **Install Python 3.10 or newer** from [python.org](https://www.python.org/downloads/macos/) and
+   run its installer. (`brew install python` works too.)
+2. **Get the code:** on this repo's GitHub page, click **Code → Download ZIP** and double-click
+   the ZIP to unpack it. (Or `git clone` it.)
+3. **Build:** open **Terminal**, type `cd ` (with a space), drag the unpacked folder onto the
+   Terminal window, press Return, then run:
 
----
+   ```bash
+   bash build.sh
+   ```
 
-## Build
+   The script installs everything it needs into a local `.venv` folder, runs the tests and
+   creates `dist/FX Hotkeys.app` and `dist/FXHotkeys-macOS.dmg`.
+4. **Install:** drag `dist/FX Hotkeys.app` into **Applications** and open it.
+5. **Grant Accessibility access:** macOS asks on first launch. Turn on **FX Hotkeys** in
+   **System Settings → Privacy & Security → Accessibility**. FX Hotkeys can't see or send key
+   presses without this permission. The sidebar shows **● Needs permission** until access is
+   granted, then switches to **● Active** by itself without a restart.
 
-### With GitHub Actions (no local setup)
+### Rebuilding later (optional: keep the permission)
 
-Open the **Actions** tab, then **Build macOS app** → **Run workflow**. When it finishes, download
-**Artifacts → FXHotkeys-macOS-arm64** (Apple Silicon). For an Intel Mac, build on that Mac
-locally.
+macOS links the Accessibility permission to the app's signature. By default every build gets a
+new signature, so after a rebuild the shortcuts stop working until you remove **FX Hotkeys** from
+the Accessibility list (**–**) and add it again (**+**).
 
-### On your Mac
+To avoid that, make a free signing certificate once:
 
-```bash
-./build.sh
-```
+1. Open **Keychain Access**, then in the menu bar choose **Keychain Access → Certificate Assistant →
+   Create a Certificate…**
+2. Name: `FX Hotkeys Signing`. Identity Type: **Self Signed Root**. Certificate Type:
+   **Code Signing**. Click **Create**.
+3. Build with it:
 
-You need Python 3.10 or newer (from python.org or Homebrew). The script makes a virtualenv, runs
-the tests, builds `dist/FX Hotkeys.app` with PyInstaller, signs it ad hoc and packs
-`dist/FXHotkeys-macOS.dmg`. To sign with your own certificate, run
-`CODESIGN_ID="Developer ID Application: …" ./build.sh`.
+   ```bash
+   CODESIGN_ID="FX Hotkeys Signing" bash build.sh
+   ```
 
-### Run from source
+   If macOS asks whether `codesign` may use the key, click **Always Allow**.
+
+Builds signed this way keep the same identity, so the permission stays granted after a rebuild.
+Grant it once more after the first build signed with the new certificate.
+
+### Other ways to run it
+
+**Download a ready-made build (Apple Silicon only).** In this repo's **Actions** tab, run
+**Build macOS app** and download **Artifacts → FXHotkeys-macOS-arm64**. The app isn't notarized
+by Apple, so macOS blocks downloaded copies the first time. To allow it, do one of these:
+
+- Try to open the app, click **Done**, then go to **System Settings → Privacy & Security** and
+  click **Open Anyway**. On macOS 14 and earlier you can right-click the app and choose **Open**
+  instead.
+- Or remove the download mark in Terminal:
+
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/FX Hotkeys.app"
+  ```
+
+**Run from source (no app, no signing).**
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -66,8 +93,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
-When you run from source, macOS asks for Accessibility access for the app that launched Python
-(Terminal, iTerm, VS Code…). Grant it to that app.
+macOS asks for Accessibility access for the app that runs Python (Terminal, iTerm, VS Code…).
+Grant it to that app. Shortcuts only work while that Terminal window keeps running.
+
+**Notarized builds for sharing.** If you want to give the app to other people without any
+warnings, you need a paid Apple Developer account. Build with your
+`CODESIGN_ID="Developer ID Application: …"` and then notarize the `.dmg` with `xcrun notarytool`.
 
 ---
 
