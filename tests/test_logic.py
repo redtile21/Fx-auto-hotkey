@@ -150,7 +150,7 @@ def test_scheme_and_exe_path_persist():
 def test_log_reports_profile_id_and_path():
     f = Fake(); winapi.foreground_path = lambda: "/bin/ls"
     cfg = config.default_config()
-    for p in cfg.profiles: p.delay_ms = 0
+    for p in cfg.profiles: p.delay_ms = 0; p.exe_path = ""
     e = eng.Engine(cfg); logs = []; e.on_log = logs.append
     e._on_key(0xA2, True); e._on_key(0x62, True); wait_idle(e); time.sleep(0.05)
     assert logs[0]["profile_id"] == cfg.profiles[0].id and logs[0]["path"] == "/bin/ls"
